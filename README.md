@@ -1,8 +1,8 @@
 # ai_lead_tracker
-AI-powered lead management system built with Next.js 14, Supabase, and Groq. Features Google OAuth, real-time updates, webhook integration, Telegram notifications, and automatic AI summaries for each lead.
+AI-powered lead management system built with Next.js 16, Supabase, and Groq. Features Google OAuth, real-time updates, webhook integration, Telegram notifications, and automatic AI summaries for each lead.
 # AI Lead Tracker
 
-Система управления лидами с AI-аналитикой. Полный стек: Next.js 14, Supabase, Groq AI.
+Система управления лидами с AI-аналитикой. Полный стек: Next.js 16, Supabase, Groq AI.
 
 ## Что умеет
 
@@ -18,7 +18,7 @@ AI-powered lead management system built with Next.js 14, Supabase, and Groq. Fea
 
 | Слой | Технология |
 |------|-----------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
 | Backend | Next.js API Routes |
 | База данных | Supabase (PostgreSQL) |
 | Auth | Supabase Auth + Google OAuth |
@@ -38,8 +38,8 @@ AI-powered lead management system built with Next.js 14, Supabase, and Groq. Fea
 
 ### 1. Клонируй репозиторий
 ```bash
-git clone https://github.com/твой-юзернейм/ai-lead-tracker.git
-cd ai-lead-tracker
+git clone https://github.com/vologdyan1/ai_lead_tracker.git
+cd ai_lead_tracker
 npm install
 ```
 
@@ -82,6 +82,22 @@ curl -X POST https://твой-домен.vercel.app/api/webhook \
     "notes": "Интересует продукт X"
   }'
 ```
+
+## Деплой на Vercel
+
+1. Импортируй репозиторий в Vercel: `vologdyan1/ai_lead_tracker`
+2. В `Project Settings -> Environment Variables` добавь:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `GROQ_API_KEY`
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+   - `WEBHOOK_SECRET`
+3. В Supabase Auth добавь Redirect URL:
+   - `http://localhost:3000/auth/callback`
+   - `https://<your-vercel-domain>/auth/callback`
+4. Нажми Deploy.
 
 ## Структура проекта
 ```

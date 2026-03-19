@@ -39,11 +39,16 @@ export default function LeadModal({ lead, onClose }: { lead: Lead; onClose: () =
         body: JSON.stringify({ leadId: lead.id }),
       });
       const data = await res.json();
-      if (data.summary) {
-        setAiSummary(data.summary);
+      if (!res.ok) {
+        throw new Error(data?.error || 'Ошибка генерации саммари');
       }
+      if (!data.summary) {
+        throw new Error('Пустой ответ от AI');
+      }
+      setAiSummary(data.summary);
     } catch (e) {
       console.error(e);
+      alert(e instanceof Error ? e.message : 'Не удалось сгенерировать AI саммари');
     } finally {
       setLoadingAI(false);
     }
