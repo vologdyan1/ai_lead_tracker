@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ai_lead_tracker
+AI-powered lead management system built with Next.js 14, Supabase, and Groq. Features Google OAuth, real-time updates, webhook integration, Telegram notifications, and automatic AI summaries for each lead.
+# AI Lead Tracker
 
-## Getting Started
+Система управления лидами с AI-аналитикой. Полный стек: Next.js 14, Supabase, Groq AI.
 
-First, run the development server:
+## Что умеет
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Google OAuth** — вход через Google аккаунт
+- **Управление лидами** — добавление, просмотр, смена статуса, удаление
+- **Real-time обновления** — новые лиды появляются без перезагрузки страницы
+- **Webhook** — приём лидов от внешних систем (сайт, CRM, формы)
+- **Telegram уведомления** — мгновенное оповещение при новом лиде от webhook
+- **AI саммари** — автоматический анализ лида через Groq (Llama 3) при открытии карточки
+- **Безопасность** — WEBHOOK_SECRET, валидация данных, rate limiting, whitelist доменов
+
+## Стек
+
+| Слой | Технология |
+|------|-----------|
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Backend | Next.js API Routes |
+| База данных | Supabase (PostgreSQL) |
+| Auth | Supabase Auth + Google OAuth |
+| Real-time | Supabase Realtime |
+| AI | Groq API (Llama 3.1 8b) |
+| Деплой | Vercel |
+
+## Архитектура
+```
+Браузер → Next.js App → Supabase (БД + Auth + Realtime)
+                     → Groq API (AI саммари)
+                     → Telegram Bot API (уведомления)
+Внешний сайт → /api/webhook → Supabase + Telegram
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Быстрый старт
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Клонируй репозиторий
+```bash
+git clone https://github.com/твой-юзернейм/ai-lead-tracker.git
+cd ai-lead-tracker
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Настрой переменные окружения
 
-## Learn More
+Создай `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GROQ_API_KEY=your_groq_key
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+WEBHOOK_SECRET=your_secret
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Выполни SQL миграцию
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Скопируй содержимое `supabase/migration.sql` и выполни в Supabase SQL Editor.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Запусти
+```bash
+npm run dev
+```
 
-## Deploy on Vercel
+Открой [http://localhost:3000](http://localhost:3000)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Webhook интеграция
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Отправь POST запрос на `/api/webhook` чтобы добавить лида из внешней системы:
+```bash
+curl -X POST https://твой-домен.vercel.app/api/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-webhook-secret: твой_секрет" \
+  -d '{
+    "name": "Иван Иванов",
+    "email": "ivan@example.com",
+    "phone": "+7 999 000 00 00",
+    "source": "website",
+    "notes": "Интересует продукт X"
+  }'
+```
+
+## Структура проекта
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── webhook/        # Приём внешних лидов
+│   │   └── ai-summary/     # Генерация AI саммари
+│   ├── auth/callback/      # OAuth callback
+│   ├── leads/              # Главная страница
+│   └── login/              # Страница входа
+├── components/
+│   └── leads/
+│       ├── LeadsClient.tsx  # Таблица лидов + Realtime
+│       ├── LeadModal.tsx    # Карточка лида
+│       └── AddLeadModal.tsx # Форма добавления
+└── lib/
+    ├── supabase/            # Клиенты Supabase
+    └── types.ts             # TypeScript типы
+```
