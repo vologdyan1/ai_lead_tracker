@@ -49,8 +49,10 @@ npm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_AUTH_REDIRECT_URL=http://localhost:3000/auth/callback
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 GROQ_API_KEY=your_groq_key
+GROQ_MODEL=llama-3.1-8b-instant
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
 WEBHOOK_SECRET=your_secret
@@ -59,6 +61,7 @@ WEBHOOK_SECRET=your_secret
 ### 3. Выполни SQL миграцию
 
 Скопируй содержимое `supabase/migration.sql` и выполни в Supabase SQL Editor.
+Миграция также автоматически дозаполняет `profiles` для уже существующих пользователей из `auth.users`.
 
 ### 4. Запусти
 ```bash
@@ -89,6 +92,7 @@ curl -X POST https://твой-домен.vercel.app/api/webhook \
 2. В `Project Settings -> Environment Variables` добавь:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_AUTH_REDIRECT_URL` (например `https://<your-vercel-domain>/auth/callback`)
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `GROQ_API_KEY`
    - `TELEGRAM_BOT_TOKEN`
@@ -98,6 +102,13 @@ curl -X POST https://твой-домен.vercel.app/api/webhook \
    - `http://localhost:3000/auth/callback`
    - `https://<your-vercel-domain>/auth/callback`
 4. Нажми Deploy.
+
+## Smoke checklist
+
+- OAuth: вход через Google перенаправляет на `/leads`.
+- AI summary: для авторизованного пользователя `/api/ai-summary` возвращает `success: true` (или fallback summary, если Groq недоступен).
+- Webhook: `POST /api/webhook` с валидным `x-webhook-secret` создает лид и отправляет Telegram уведомление.
+- Если webhook вернул `No user profile found...`, выполните вход в приложение хотя бы один раз и повторите запрос.
 
 ## Структура проекта
 ```

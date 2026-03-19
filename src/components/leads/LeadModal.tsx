@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { X, Sparkles, Mail, Phone, Globe, Calendar, FileText } from 'lucide-react';
@@ -13,24 +13,7 @@ export default function LeadModal({ lead, onClose }: { lead: Lead; onClose: () =
   const [aiSummary, setAiSummary] = useState(lead.ai_summary || '');
   const supabase = createClient();
 
-  useEffect(() => {
-    if (!lead.ai_summary) {
-      generateAiSummary()
-    }
-  }, [lead.id])
-
-  const handleStatusChange = async (newStatus: string) => {
-    setStatus(newStatus as LeadStatus);
-    await supabase.from('leads').update({ status: newStatus }).eq('id', lead.id);
-  };
-
-  const handleSaveNotes = async () => {
-    setIsSavingNotes(true);
-    await supabase.from('leads').update({ notes }).eq('id', lead.id);
-    setIsSavingNotes(false);
-  };
-
-  const generateAiSummary = async () => {
+  const generateAiSummary = useCallback(async () => {
     setLoadingAI(true);
     try {
       const res = await fetch('/api/ai-summary', {
@@ -52,6 +35,23 @@ export default function LeadModal({ lead, onClose }: { lead: Lead; onClose: () =
     } finally {
       setLoadingAI(false);
     }
+  }, [lead.id]);
+
+  useEffect(() => {
+    if (!lead.ai_summary) {
+      generateAiSummary();
+    }
+  }, [generateAiSummary, lead.ai_summary]);
+
+  const handleStatusChange = async (newStatus: string) => {
+    setStatus(newStatus as LeadStatus);
+    await supabase.from('leads').update({ status: newStatus }).eq('id', lead.id);
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    await supabase.from('leads').update({ notes }).eq('id', lead.id);
+    setIsSavingNotes(false);
   };
 
   const getStatusBadge = (s: string) => {

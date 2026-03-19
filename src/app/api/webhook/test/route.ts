@@ -31,7 +31,8 @@ export async function GET(request: Request) {
       status: response.status,
       data,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown webhook test error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

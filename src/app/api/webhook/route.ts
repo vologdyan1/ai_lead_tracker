@@ -30,7 +30,10 @@ export async function POST(request: Request) {
 
     if (profileError || !profiles || profiles.length === 0) {
       console.error('Error fetching user profile:', profileError);
-      return NextResponse.json({ error: 'Database error: No user found' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'No user profile found. Sign in once via Google to initialize profile.' },
+        { status: 409 }
+      );
     }
 
     const userId = profiles[0].id;
@@ -80,9 +83,10 @@ export async function POST(request: Request) {
         const tgJson = await tgRes.json()
         console.log('Telegram response:', JSON.stringify(tgJson))
         return NextResponse.json({ success: true, lead, tgJson, telegramBody })
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown Telegram error'
         console.error('Error sending telegram message:', err)
-        return NextResponse.json({ success: true, lead, tgError: err.message, telegramBody })
+        return NextResponse.json({ success: true, lead, tgError: message, telegramBody })
       }
     }
 

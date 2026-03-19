@@ -80,6 +80,17 @@ after insert on auth.users
 for each row
 execute procedure public.handle_new_user();
 
+-- Backfill profiles for users created before this migration.
+insert into public.profiles (id, email, full_name, avatar_url)
+select
+  u.id,
+  u.email,
+  coalesce(u.raw_user_meta_data ->> 'full_name', ''),
+  u.raw_user_meta_data ->> 'avatar_url'
+from auth.users u
+left join public.profiles p on p.id = u.id
+where p.id is null;
+
 alter table public.profiles enable row level security;
 alter table public.leads enable row level security;
 alter table public.lead_events enable row level security;
