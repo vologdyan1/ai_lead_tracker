@@ -1,131 +1,80 @@
-# ai_lead_tracker
-AI-powered lead management system built with Next.js 16, Supabase, and Groq. Features Google OAuth, real-time updates, webhook integration, Telegram notifications, and automatic AI summaries for each lead.
 # AI Lead Tracker
 
-Система управления лидами с AI-аналитикой. Полный стек: Next.js 16, Supabase, Groq AI.
+Система управления лидами с AI-аналитикой: OAuth через Google, realtime-лиды, webhook-интеграция, Telegram-уведомления и AI summary.
 
-## Что умеет
+## Demo
 
-- **Google OAuth** — вход через Google аккаунт
-- **Управление лидами** — добавление, просмотр, смена статуса, удаление
-- **Real-time обновления** — новые лиды появляются без перезагрузки страницы
-- **Webhook** — приём лидов от внешних систем (сайт, CRM, формы)
-- **Telegram уведомления** — мгновенное оповещение при новом лиде от webhook
-- **AI саммари** — автоматический анализ лида через Groq (Llama 3) при открытии карточки
-- **Безопасность** — WEBHOOK_SECRET, валидация данных, rate limiting, whitelist доменов
+- Production: `https://aileadtracker.vercel.app`
+- Вход: кнопка `Войти через Google`
+- Быстрая проверка: login -> открыть лид -> сгенерировать AI summary -> webhook POST
 
-## Стек
+## Features
 
-| Слой | Технология |
-|------|-----------|
-| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
-| Backend | Next.js API Routes |
-| База данных | Supabase (PostgreSQL) |
-| Auth | Supabase Auth + Google OAuth |
-| Real-time | Supabase Realtime |
-| AI | Groq API (Llama 3.1 8b) |
-| Деплой | Vercel |
+- Google OAuth (Supabase Auth)
+- CRUD лидов + realtime обновления
+- AI summary для лида (Groq + fallback)
+- Webhook endpoint `/api/webhook` с секретом `x-webhook-secret`
+- Telegram уведомления при входящем webhook
 
-## Архитектура
-```
-Браузер → Next.js App → Supabase (БД + Auth + Realtime)
-                     → Groq API (AI саммари)
-                     → Telegram Bot API (уведомления)
-Внешний сайт → /api/webhook → Supabase + Telegram
-```
+## Quick Start
 
-## Быстрый старт
-
-### 1. Клонируй репозиторий
 ```bash
 git clone https://github.com/vologdyan1/ai_lead_tracker.git
 cd ai_lead_tracker
 npm install
 ```
 
-### 2. Настрой переменные окружения
+Создай `.env.local` (или скопируй из `.env.example`):
 
-Создай `.env.local`:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_AUTH_REDIRECT_URL=http://localhost:3000/auth/callback
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GROQ_API_KEY=your_groq_key
+SUPABASE_SERVICE_ROLE_KEY=
+GROQ_API_KEY=
 GROQ_MODEL=llama-3.1-8b-instant
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_CHAT_ID=your_chat_id
-WEBHOOK_SECRET=your_secret
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+WEBHOOK_SECRET=
 ```
 
-### 3. Выполни SQL миграцию
+Выполни SQL из `supabase/migration.sql` в Supabase SQL Editor, затем:
 
-Скопируй содержимое `supabase/migration.sql` и выполни в Supabase SQL Editor.
-Миграция также автоматически дозаполняет `profiles` для уже существующих пользователей из `auth.users`.
-
-### 4. Запусти
 ```bash
 npm run dev
 ```
 
-Открой [http://localhost:3000](http://localhost:3000)
+## Deploy (Vercel)
 
-## Webhook интеграция
-
-Отправь POST запрос на `/api/webhook` чтобы добавить лида из внешней системы:
-```bash
-curl -X POST https://твой-домен.vercel.app/api/webhook \
-  -H "Content-Type: application/json" \
-  -H "x-webhook-secret: твой_секрет" \
-  -d '{
-    "name": "Иван Иванов",
-    "email": "ivan@example.com",
-    "phone": "+7 999 000 00 00",
-    "source": "website",
-    "notes": "Интересует продукт X"
-  }'
-```
-
-## Деплой на Vercel
-
-1. Импортируй репозиторий в Vercel: `vologdyan1/ai_lead_tracker`
-2. В `Project Settings -> Environment Variables` добавь:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_AUTH_REDIRECT_URL` (например `https://<your-vercel-domain>/auth/callback`)
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `GROQ_API_KEY`
-   - `TELEGRAM_BOT_TOKEN`
-   - `TELEGRAM_CHAT_ID`
-   - `WEBHOOK_SECRET`
-3. В Supabase Auth добавь Redirect URL:
+1. Импортируй репозиторий `vologdyan1/ai_lead_tracker` в Vercel.
+2. Добавь все переменные окружения из `.env.example` в `Project Settings -> Environment Variables`.
+3. Для прода укажи:
+   - `NEXT_PUBLIC_AUTH_REDIRECT_URL=https://aileadtracker.vercel.app/auth/callback`
+4. В Supabase Auth -> URL Configuration добавь:
+   - `https://aileadtracker.vercel.app/auth/callback`
    - `http://localhost:3000/auth/callback`
-   - `https://<your-vercel-domain>/auth/callback`
-4. Нажми Deploy.
 
-## Smoke checklist
+## Webhook Test
 
-- OAuth: вход через Google перенаправляет на `/leads`.
-- AI summary: для авторизованного пользователя `/api/ai-summary` возвращает `success: true` (или fallback summary, если Groq недоступен).
-- Webhook: `POST /api/webhook` с валидным `x-webhook-secret` создает лид и отправляет Telegram уведомление.
-- Если webhook вернул `No user profile found...`, выполните вход в приложение хотя бы один раз и повторите запрос.
+PowerShell:
 
-## Структура проекта
+```powershell
+$secret = "your_webhook_secret"
+$body = @{
+  name   = "Webhook Test Lead"
+  email  = "webhook-test@example.com"
+  phone  = "+79990001122"
+  source = "website"
+  notes  = "Webhook smoke test"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+  -Uri "https://aileadtracker.vercel.app/api/webhook" `
+  -Headers @{
+    "Content-Type"     = "application/json"
+    "x-webhook-secret" = $secret
+  } `
+  -Body $body
 ```
-src/
-├── app/
-│   ├── api/
-│   │   ├── webhook/        # Приём внешних лидов
-│   │   └── ai-summary/     # Генерация AI саммари
-│   ├── auth/callback/      # OAuth callback
-│   ├── leads/              # Главная страница
-│   └── login/              # Страница входа
-├── components/
-│   └── leads/
-│       ├── LeadsClient.tsx  # Таблица лидов + Realtime
-│       ├── LeadModal.tsx    # Карточка лида
-│       └── AddLeadModal.tsx # Форма добавления
-└── lib/
-    ├── supabase/            # Клиенты Supabase
-    └── types.ts             # TypeScript типы
-```
+
+Ожидаемо: `success: true`, новый лид в приложении и сообщение в Telegram.
