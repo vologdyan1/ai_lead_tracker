@@ -6,23 +6,32 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://matveeva-design.pro',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-webhook-secret',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: Request) {
   try {
     const webhookSecret = process.env.WEBHOOK_SECRET;
     const authHeader = request.headers.get('x-webhook-secret');
 
     if (!webhookSecret || authHeader !== webhookSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
     }
 
     const payload = await request.json();
     const { name, email, phone, source, notes } = payload;
 
     if (!name) {
-      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'name is required' }, { status: 400, headers: corsHeaders });
     }
 
-    // Получаем первого пользователя из таблицы profiles для MVP
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id')
@@ -31,8 +40,8 @@ export async function POST(request: Request) {
     if (profileError || !profiles || profiles.length === 0) {
       console.error('Error fetching user profile:', profileError);
       return NextResponse.json(
-        { error: 'No user profile found. Sign in once via Google to initialize profile.' },
-        { status: 409 }
+        { error: 'No user profile found.' },
+        { status: 409, headers: corsHeaders }
       );
     }
 
@@ -57,42 +66,36 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Error inserting lead:', insertError);
-      return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create lead' }, { status: 500, headers: corsHeaders });
     }
 
-    // Отправка уведомления в Telegram
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
     if (botToken && chatId) {
-      const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`
+      const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
       const telegramBody = {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
+        chat_id: chatId,
         text: `🔔 Новый лид!\n\nИмя: ${name}\nEmail: ${email ?? '—'}\nТелефон: ${phone ?? '—'}\nИсточник: ${source ?? '—'}`,
-      }
-
-      console.log('Sending Telegram:', telegramUrl, telegramBody)
+      };
 
       try {
         const tgRes = await fetch(telegramUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(telegramBody),
-        })
-
-        const tgJson = await tgRes.json()
-        console.log('Telegram response:', JSON.stringify(tgJson))
-        return NextResponse.json({ success: true, lead, tgJson, telegramBody })
+        });
+        const tgJson = await tgRes.json();
+        return NextResponse.json({ success: true, lead, tgJson }, { headers: corsHeaders });
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown Telegram error'
-        console.error('Error sending telegram message:', err)
-        return NextResponse.json({ success: true, lead, tgError: message, telegramBody })
+        const message = err instanceof Error ? err.message : 'Unknown Telegram error';
+        return NextResponse.json({ success: true, lead, tgError: message }, { headers: corsHeaders });
       }
     }
 
-    return NextResponse.json({ success: true, lead });
+    return NextResponse.json({ success: true, lead }, { headers: corsHeaders });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500, headers: corsHeaders });
   }
 }
